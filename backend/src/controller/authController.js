@@ -1,0 +1,220 @@
+import crypto from "crypto";
+import User from "./../models/user.js";
+import { sendMail } from "../config/mail.js";
+import bcrypt from "bcryptjs";
+import { generateTokenAndSetCookie } from "../config/generateToken.js";
+// User Registration with OTP Verification
+export const UserRegisterController = async (req, res) => {
+  try {
+    const { name, email, password, phoneNumber } = req.body;
+
+    // 1. Presence check
+    if (!name || !email || !password || !phoneNumber) {
+      return res.status(400).json({
+        message: "All fields are required",
+      });
+    }
+
+    // 2. Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: "Invalid email format",
+      });
+    }
+
+    // 3. Password strength check
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    // 4. Phone number format validation (10-15 digits)
+    const phoneRegex = /^\+?[0-9]{10,15}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      return res.status(400).json({
+        message: "Invalid phone number format",
+      });
+    }
+
+    // 5. Duplicate email check (generic message to prevent enumeration)
+    const userExist = await User.findOne({ email });
+    if (userExist) {
+      return res.status(400).json({
+        message: "user already exists.",
+      });
+    }
+
+    // 6. Cryptographically secure OTP
+    const otp = crypto.randomInt(100000, 999999);
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // 7. Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 8. Create user
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      phoneNumber,
+      otp,
+      otpExpiresAt,
+      isVerified: false,
+    });
+
+    // 9. Send verification email
+    const emailSent = await sendMail(
+      email,
+      "SafeCampus Email Verification",
+      `
+        <h2>Hello ${name}</h2>
+        <p>Your OTP for email verification is:</p>
+        <h1>${otp}</h1>
+        <p>This OTP is valid for <strong>10 minutes</strong>.</p>
+        <p>If you did not request this, please ignore this email.</p>
+      `,
+    );
+
+    // 10. Rollback user creation if email fails
+    if (!emailSent) {
+      await User.deleteOne({ _id: user._id });
+      return res.status(500).json({
+        message: "Registration failed. Please try again.",
+      });
+    }
+
+    res.status(201).json({
+      message: "User registered successfully. Please verify your email.",
+    });
+  } catch (error) {
+    // 11. Safe error logging (avoid leaking stack traces)
+    console.error(
+      `[UserRegisterController] ${new Date().toISOString()}:`,
+      error.message,
+    );
+
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+// Email Verification Controller
+export const VerifyEmailController = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // 1. Presence check
+    if (!email || !otp) {
+      return res.status(400).json({
+        message: "Email and OTP are required",
+      });
+    }
+
+    // 2. Find user by email
+    const existingUser = await User.findOne({ email });
+    if (!existingUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // 3. Check if OTP is valid and not expired
+    if (existingUser.otp != otp) {
+      return res.status(400).json({
+        message: "Invalid OTP",
+      });
+    }
+
+    if (existingUser.otpExpiresAt < new Date()) {
+      return res.status(400).json({
+        message: "OTP has expired",
+      });
+    }
+
+    // 4. Mark user as verified
+    existingUser.isVerified = true;
+    existingUser.otp = undefined;
+    existingUser.otpExpiresAt = undefined;
+    await existingUser.save();
+    generateTokenAndSetCookie(res, existingUser);
+    console.log("it is token:  ",generateTokenAndSetCookie(res, existingUser));
+
+    res.status(200).json({
+      message: "Email verified successfully",
+      User: {
+        id: existingUser._id,
+        name: existingUser.name,
+        email: existingUser.email,
+      },
+    });
+  } catch (error) {
+    console.error(
+      `[VerifyEmailController] ${new Date().toISOString()}:`,
+      error.message,
+    );
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+
+// Future controllers for login, password reset, etc.
+export const UserLoginController = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
+    const existingUser = await User.findOne({ email });
+    if (!existingUser) {
+      return res.status(404).json({
+        message: "You do not have an account. Please register first.",
+      });
+    }
+    if (!existingUser.isVerified) {
+      return res.status(403).json({
+        message: "Please verify your email before logging in.",
+      });
+    }
+    if (!(await bcrypt.compare(password, existingUser.password))) {
+      return res.status(401).json({
+        message: "Invalid credentials",
+      });
+    }
+    generateTokenAndSetCookie(res, existingUser);
+
+    res.status(200).json({
+      message: "Login successful",
+      User: {
+        id: existingUser._id,
+        name: existingUser.name,
+        email: existingUser.email,
+      },
+    });
+  } catch (error) {
+    console.error(
+      `[UserLoginController] ${new Date().toISOString()}:`,
+      error.message,
+    );
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+
+//logout controller
+export const LogoutController = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+  });
+
+  res.status(200).json({
+    message: "Logged out successfully",
+  });
+};
