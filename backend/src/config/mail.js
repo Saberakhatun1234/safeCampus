@@ -11,6 +11,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Verify mail configuration on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("Error occurred while verifying mail configuration:", error);
+  } else {
+    console.log("Mail configuration verified successfully.");
+  }
+});
+// Function to send email for useremail verification
 export async function sendMail(email, subject, html) {
   try {
     const info = await transporter.sendMail({
@@ -29,3 +38,24 @@ export async function sendMail(email, subject, html) {
     return false;
   }
 }
+
+//send mail for sos alert and report alert
+
+export const sendNotificationEmail = async (to, subject, html) => {
+  try {
+    await transporter.sendMail({
+      from: `"SafeCampus" <${process.env.MAIL_USER}>`,
+      to,
+      subject,
+      html,
+    });
+
+    console.log("Email sent successfully");
+
+    return true;
+  } catch (error) {
+    console.log("Email Error:", error);
+
+    return false;
+  }
+};
