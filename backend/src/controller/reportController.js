@@ -1,53 +1,17 @@
 import Report from "../models/reports.js";
 import { sendNotificationEmail } from "../config/mail.js";
-// 🤖 Call Claude API to determine severity
-const analyzeSeverity = async (title, description, category) => {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: `You are a campus safety AI assistant. 
-Your job is to analyze incident reports and assign a severity level.
-Severity levels:
-- Low: Minor issues, no immediate danger (e.g. petty theft, mild verbal dispute)
-- Medium: Moderate concern, needs attention soon (e.g. repeated harassment, threatening behavior)
-- High: Urgent, immediate danger or serious harm (e.g. physical violence, medical emergency, serious ragging)
-Respond ONLY with a valid JSON object in this exact format, nothing else:
-{"severity": "Low"} or {"severity": "Medium"} or {"severity": "High"}`,
-      messages: [
-        {
-          role: "user",
-          content: `Analyze this campus incident:
-Category: ${category}
-Title: ${title}
-Description: ${description}
-Assign the correct severity level.`,
-        },
-      ],
-    }),
-  });
 
-  const data = await response.json();
-  const text = data.content?.[0]?.text?.trim();
-  const parsed = JSON.parse(text);
+import axios from "axios";
+import User from "../models/user.js";
 
-  if (!["Low", "Medium", "High"].includes(parsed.severity)) {
-    return "Medium"; // safe fallback
-  }
-  return parsed.severity;
-};
 
 // ✅ Report an incident
 export const ReportController = async (req, res) => {
   try {
-    const { title, description, category, location, isAnonymous } = req.body;
+    const { title, description, location, isAnonymous } = req.body;
 
     // 1. Presence check
-    if (!title || !description || !category || !location) {
+    if (!title || !description || !location) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -68,23 +32,26 @@ export const ReportController = async (req, res) => {
     }
 
     // 2. AI assigns severity
-    let severity = "Medium"; // default fallback
-    try {
-      severity = await analyzeSeverity(title, description, category);
-    } catch (aiError) {
-      console.error(
-        "AI severity analysis failed, using default:",
-        aiError.message,
-      );
-    }
+    // AI PREDICTION
+    const aiResponse = await axios.post(
+      "http://127.0.0.1:5001/predict",
+      {
+        description,
+      });
+
+    const { 
+      category, priority, risk_score,
+    } = aiResponse.data;
+
+    const severity = priority;
 
     // 3. Create incident
     const incident = await Report.create({
-      // ✅ fixed: Report not report
       title,
       description,
       category,
-      severity, // ✅ AI assigned
+      severity,
+      riskScore: risk_score,
       location,
       isAnonymous: isAnonymous || false,
       reportedBy: isAnonymous ? null : req.user.id,
