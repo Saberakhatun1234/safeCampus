@@ -14,14 +14,26 @@ const reportSchema = new mongoose.Schema(
 
     category: {
       type: String,
-      enum: ["theft", "violence", "ragging", "harassment", "other"],
+      enum: [
+    "Harassment",
+    "Emergency",
+    "General Complaint",
+    "Ragging",
+    "Mental Stress",
+    "Theft",
+    "Violence",
+  ],
       default: "ragging",
     },
     severity: {
       type: String,
-      enum: ["Low", "Medium", "High"],
+      enum: ["Low", "Medium", "High", "Critical"],
       default: "Medium",
     },
+    riskScore: {
+  type: Number,
+  default: 0,
+},
     location: {
       type: String,
       required: true,
