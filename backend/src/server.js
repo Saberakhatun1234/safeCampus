@@ -9,13 +9,17 @@ import reportRouter from './routes/reportRouter.js';
 import sosRouter from './routes/sosRoute.js';
 
 dotenv.config();
-
-const PORT = parseInt(process.env.PORT) ;
 const app = express();
-app.use(cors({
+app.use(
+  cors({
     origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH","HEAD"],
     credentials: true,
-  }));
+  }),
+);
+const PORT = parseInt(process.env.PORT) ;
+
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.json());

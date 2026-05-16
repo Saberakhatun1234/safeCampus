@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
 import {
   Card,
   CardAction,
@@ -9,9 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+
 import { useAuth } from "@/context/AuthContext";
 
 function Login() {
@@ -20,48 +24,61 @@ function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
 
-    // Basic validation
+    // Validation
     if (!email || !password) {
-      setError("Please fill in all fields.");
+      toast.error("Please fill in all fields");
       return;
     }
 
-    setLoading(true); // ← was missing before
+    setLoading(true);
 
     try {
-      const res = await fetch("/auth/login", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+        }),
       });
 
       const data = await res.json();
 
+      // Backend Error
       if (!res.ok) {
-        setError(data.message || "Login failed. Check your credentials.");
+        toast.error(data.message || "Invalid credentials");
         return;
       }
 
-      // Save user to context
+      // Save user
       login(data.user);
 
-      // Redirect based on role
-      if (data.user.role === "admin") navigate("/admin/dashboard");
-      else if (data.user.role === "security") navigate("/security/dashboard");
-      else navigate("/student/home");
+      toast.success("Login successful");
 
-    } catch {
-      setError("Something went wrong. Please try again.");
+      // Redirect
+      if (data.user.role === "admin") {
+        navigate("/admin/dashboard");
+      } else if (data.user.role === "security") {
+        navigate("/security/dashboard");
+      } else if (data.user.role === "student") {
+        navigate("/student/dashboard");
+      }else {
+        navigate("/");
+      }
+    } catch (error) {
+      console.error(error);
+
+      toast.error("Something went wrong. Please try again later.");
     } finally {
-      setLoading(false); // ← always runs, even if error
+      setLoading(false);
     }
   }
 
@@ -70,9 +87,11 @@ function Login() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Login to your account</CardTitle>
+
           <CardDescription>
             Enter your email below to login to your account
           </CardDescription>
+
           <CardAction>
             <Button variant="link" onClick={() => navigate("/auth/register")}>
               Sign Up
@@ -83,15 +102,9 @@ function Login() {
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
-
-              {error && (
-                <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-md">
-                  {error}
-                </p>
-              )}
-
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
+
                 <Input
                   id="email"
                   type="email"
@@ -105,6 +118,7 @@ function Login() {
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
+
                   <a
                     href="#"
                     className="ml-auto text-sm underline-offset-4 hover:underline"
@@ -112,6 +126,7 @@ function Login() {
                     Forgot your password?
                   </a>
                 </div>
+
                 <Input
                   id="password"
                   type="password"
@@ -124,7 +139,6 @@ function Login() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Logging in..." : "Login"}
               </Button>
-
             </div>
           </form>
         </CardContent>

@@ -1,96 +1,92 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
-
-// ─── Types ───────────────────────────────────────────
-type Role = "admin" | "student" | "security";
-
-type User = {
+import { createContext, useContext, useEffect, useState } from "react";
+type UserRole = "admin" | "student" | "security";
+type UserType = {
   id: string;
   name: string;
   email: string;
-  role: Role;
+  role: UserRole;
 };
 
 type AuthContextType = {
-  user: User | null;
+  user: UserType | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (user: User) => void;
-  logout: () => void;
+  login: (userData: UserType) => void;
+  logout: () => Promise<void>;
 };
 
-// ─── Context ─────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// ─── Provider ────────────────────────────────────────
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<UserType | null>(null);
 
-  // On app start — check if session still valid
-  useEffect(() => {
-    async function checkSession() {
-      try {
-        // 🔧 Replace with your real API endpoint
-        const res = await fetch("/api/auth/me", {
-          credentials: "include", // sends cookies automatically
-        });
+  // IMPORTANT
+const [isLoading, setIsLoading] = useState(true);
 
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch {
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    checkSession();
-  }, []);
-
-  function login(userData: User) {
+  // LOGIN
+  const login = (userData: UserType) => {
     setUser(userData);
-  }
+  };
 
-  function logout() {
-    setUser(null);
+  // LOGOUT
+  const logout = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
 
-    // 🔧 Call your logout API to clear the cookie
-    fetch("/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-  }
+      setUser(null);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
+  // CHECK AUTH AFTER REFRESH
+  const checkAuth = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setUser(data.user);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // RUN WHEN APP STARTS
+  useEffect(() => {
+    checkAuth();
+  }, []);
+const isAuthenticated = !!user;
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+   <AuthContext.Provider
+  value={{
+    user,
+    isAuthenticated,
+    isLoading,
+    login,
+    logout,
+  }}
+>    {children}
+  </AuthContext.Provider>
   );
-}
+};
 
-// ─── Hook ────────────────────────────────────────────
-export function useAuth() {
+// CUSTOM HOOK
+export const useAuth = () => {
   const context = useContext(AuthContext);
+
   if (!context) {
     throw new Error("useAuth must be used inside AuthProvider");
   }
+
   return context;
-}
+};

@@ -3,8 +3,27 @@ import User from "./../models/user.js";
 import { sendMail } from "../config/mail.js";
 import bcrypt from "bcryptjs";
 import { generateTokenAndSetCookie } from "../config/generateToken.js";
+
+//check token
+export const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server Error",
+    });
+  }
+};
+
+
 // User Registration with OTP Verification
 export const UserRegisterController = async (req, res) => {
+  console.log("Received registration request:", req.body); // Debug log
   try {
     const { name, email, password, phoneNumber } = req.body;
 
@@ -143,10 +162,11 @@ export const VerifyEmailController = async (req, res) => {
 
     res.status(200).json({
       message: "Email verified successfully",
-      User: {
+      user: {
         id: existingUser._id,
         name: existingUser.name,
         email: existingUser.email,
+        role: existingUser.role,
       },
     });
   } catch (error) {
@@ -189,10 +209,11 @@ export const UserLoginController = async (req, res) => {
 
     res.status(200).json({
       message: "Login successful",
-      User: {
+      user: {
         id: existingUser._id,
         name: existingUser.name,
         email: existingUser.email,
+        role: existingUser.role,
       },
     });
   } catch (error) {

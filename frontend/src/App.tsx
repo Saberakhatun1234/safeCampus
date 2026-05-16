@@ -10,6 +10,8 @@ import StudentDashboard from "./pages/studentPages/StudentDashboard";
 import SecurityDashboard from "./pages/securityPages/SecurityDashboard";
 import VerifyEmail from "./pages/authPages/VerifyEmail";
 import { useAuth } from "./context/AuthContext";
+import Unauthorized from "./pages/UnAuthorize";
+import { Toaster } from "./components/ui/sonner";
 function App() {
     const { user, isAuthenticated, isLoading } = useAuth();
      if (isLoading) {
@@ -20,53 +22,58 @@ function App() {
        );
      }
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public routes — no auth check */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/auth/login" element={<Login />} />
-        <Route path="/auth/register" element={<Register />} />
-        <Route path="/auth/verify-email" element={<VerifyEmail />} />
+    <>
+      {" "}
+      <Toaster position="top-right" richColors />
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes — no auth check */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/auth/login" element={<Login />} />
+          <Route path="/auth/register" element={<Register />} />
+          <Route path="/auth/verify-email" element={<VerifyEmail />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* Protected routes — wrapped individually */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <AuthCheck
-              isAuthenticated={isAuthenticated}
-              user={user}
-              requiredRole="admin"
-            >
-              <AdminDashboard />
-            </AuthCheck>
-          }
-        />
-        <Route
-          path="/security/dashboard"
-          element={
-            <AuthCheck
-              isAuthenticated={isAuthenticated}
-              user={user}
-              requiredRole="security"
-            >
-              <SecurityDashboard />
-            </AuthCheck>
-          }
-        />
-        <Route
-          path="/student/dashboard"
-          element={
-            <AuthCheck
-              isAuthenticated={isAuthenticated}
-              user={user}
-              requiredRole="student"
-            >
-              <StudentDashboard />
-            </AuthCheck>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+          {/* Protected routes — wrapped individually */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <AuthCheck
+                isAuthenticated={isAuthenticated}
+                user={user}
+                requiredRole="admin"
+              >
+                <AdminDashboard />
+              </AuthCheck>
+            }
+          />
+          <Route
+            path="/security/dashboard"
+            element={
+              <AuthCheck
+                isAuthenticated={isAuthenticated}
+                user={user}
+                requiredRole="security"
+              >
+                <SecurityDashboard />
+              </AuthCheck>
+            }
+          />
+          <Route
+            path="/student/dashboard"
+            element={
+              <AuthCheck
+                isAuthenticated={isAuthenticated}
+                user={user}
+                requiredRole="student"
+              >
+                <StudentDashboard />
+              </AuthCheck>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </>
   );
 }
 

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
 import {
   Card,
   CardContent,
@@ -7,120 +9,199 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+import { useAuth } from "@/context/AuthContext";
 
 function VerifyEmail() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Email passed from Register page via navigation state
+  const { login } = useAuth();
+
+  // Email from Register page
   const email = location.state?.email || "";
 
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [seconds, setSeconds] = useState(30);
-  const [canResend, setCanResend] = useState(false);
+
+  // const [seconds, setSeconds] = useState(30);
+  // const [canResend, setCanResend] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Redirect if no email in state
+  // Redirect if email missing
   useEffect(() => {
-    if (!email) navigate("/auth/register");
-  }, [email]);
-
-  // Countdown timer
-  useEffect(() => {
-    if (seconds <= 0) {
-      setCanResend(true);
-      return;
+    if (!email) {
+      navigate("/auth/register");
     }
-    const t = setTimeout(() => setSeconds((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [seconds]);
+  }, [email, navigate]);
 
+  // Timer
+  // useEffect(() => {
+  //   if (seconds <= 0) {
+  //     setCanResend(true);
+  //     return;
+  //   }
+
+  //   const timer = setTimeout(() => {
+  //     setSeconds((prev) => prev - 1);
+  //   }, 1000);
+
+  //   return () => clearTimeout(timer);
+  // }, [seconds]);
+
+  // OTP input
   function handleChange(index: number, value: string) {
     if (!/^[0-9]?$/.test(value)) return;
+
     const updated = [...otp];
     updated[index] = value;
-    setOtp(updated);
-    setError("");
 
-    // Auto-focus next
+    setOtp(updated);
+
+    // Auto next focus
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   }
 
+  // Keyboard support
   function handleKeyDown(index: number, e: React.KeyboardEvent) {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
-    if (e.key === "ArrowLeft" && index > 0)
+
+    if (e.key === "ArrowLeft" && index > 0) {
       inputRefs.current[index - 1]?.focus();
-    if (e.key === "ArrowRight" && index < 5)
+    }
+
+    if (e.key === "ArrowRight" && index < 5) {
       inputRefs.current[index + 1]?.focus();
+    }
   }
 
+  // Paste support
   function handlePaste(e: React.ClipboardEvent) {
     e.preventDefault();
-    const paste = e.clipboardData
+
+    const pasted = e.clipboardData
       .getData("text")
       .replace(/\D/g, "")
       .slice(0, 6);
+
     const updated = Array(6).fill("");
-    paste.split("").forEach((ch, i) => {
-      updated[i] = ch;
+
+    pasted.split("").forEach((char, index) => {
+      updated[index] = char;
     });
+
     setOtp(updated);
-    inputRefs.current[Math.min(paste.length, 5)]?.focus();
+
+    inputRefs.current[Math.min(pasted.length, 5)]?.focus();
   }
 
-  function handleResend() {
-    setOtp(Array(6).fill(""));
-    setError("");
-    setSeconds(30);
-    setCanResend(false);
-    inputRefs.current[0]?.focus();
-
-    // 🔧 Call your resend OTP API here
-    console.log("Resending OTP to", email);
-  }
-
+  // Verify OTP
   async function handleVerify() {
     const code = otp.join("");
+
     if (code.length < 6) {
-      setError("Please enter all 6 digits.");
+      toast.error("Please enter all 6 digits");
       return;
     }
 
     setLoading(true);
-    setError("");
 
     try {
-      // 🔧 Replace with real API call
-      // const res = await verifyOTP({ email, otp: code });
-      // const { user, token } = res;
-      // login(user, token); // from AuthContext
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/verify-email`,
+        {
+          method: "POST",
 
-      // Fake success for now
-      await new Promise((r) => setTimeout(r, 1000));
-      setSuccess(true);
+          headers: {
+            "Content-Type": "application/json",
+          },
 
-      setTimeout(() => {
-        navigate("/student/home"); // will come from role later
-      }, 1500);
-    } catch {
-      setError("Invalid OTP. Please try again.");
+          credentials: "include",
+
+          body: JSON.stringify({
+            email,
+            otp: code,
+          }),
+        },
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message || "Invalid OTP");
+        return;
+      }
+
+      toast.success("Email verified successfully");
+
+      // Save user
+      login(data.user);
+
+      // Redirect based on role
+      if (data.user.role === "admin") {
+        navigate("/admin/dashboard");
+      } else if (data.user.role === "security") {
+        navigate("/security/dashboard");
+      } else {
+        navigate("/student/dashboard");
+      }
+    } catch (error) {
+      console.log(error);
+
+      toast.error("Something went wrong");
     } finally {
       setLoading(false);
     }
   }
 
-  const formatTime = (s: number) =>
-    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  // Resend OTP
+  // async function handleResend() {
+  //   try {
+  //     const res = await fetch(
+  //       `${import.meta.env.VITE_API_URL}/auth/resend-otp`,
+  //       {
+  //         method: "POST",
+
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+
+  //         body: JSON.stringify({ email }),
+  //       },
+  //     );
+
+  //     const data = await res.json();
+
+  //     if (!res.ok) {
+  //       toast.error(data.message || "Failed to resend OTP");
+  //       return;
+  //     }
+
+  //     toast.success("OTP resent successfully");
+
+  //     setOtp(Array(6).fill(""));
+  //     setSeconds(30);
+  //     setCanResend(false);
+
+  //     inputRefs.current[0]?.focus();
+  //   } catch (error) {
+  //     console.log(error);
+
+  //     toast.error("Something went wrong");
+  //   }
+  // }
+
+  // Format timer
+  // const formatTime = (s: number) =>
+  //   `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -129,78 +210,66 @@ function VerifyEmail() {
           <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-2">
             <span className="text-2xl">✉️</span>
           </div>
+
           <CardTitle>Verify your email</CardTitle>
+
           <CardDescription>
             We sent a 6-digit code to{" "}
-            <span className="font-medium text-gray-800">{email}</span>. Enter it
-            below to continue.
+            <span className="font-medium text-gray-800">{email}</span>
           </CardDescription>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4">
-          {/* OTP inputs */}
+          {/* OTP Inputs */}
           <div className="flex gap-2 justify-between">
-            {otp.map((digit, i) => (
+            {otp.map((digit, index) => (
               <Input
-                key={i}
+                key={index}
                 ref={(el) => {
-                  inputRefs.current[i] = el;
+                  inputRefs.current[index] = el;
                 }}
                 type="text"
                 inputMode="numeric"
                 maxLength={1}
                 value={digit}
-                onChange={(e) => handleChange(i, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(i, e)}
+                onChange={(e) => handleChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={handlePaste}
-                className={`w-11 h-14 text-center text-xl font-medium border rounded-md outline-none transition-all
-                  ${digit ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-gray-200"}
-                  ${error ? "border-red-400 bg-red-50" : ""}
-                  focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100`}
+                className={`w-11 h-14 text-center text-xl font-medium
+                ${
+                  digit
+                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                    : ""
+                }`}
               />
             ))}
           </div>
 
-          {/* Error / Success */}
-          {error && (
-            <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-md">
-              {error}
-            </p>
-          )}
-          {success && (
-            <p className="text-sm text-emerald-700 bg-emerald-50 px-3 py-2 rounded-md">
-              ✓ Email verified! Redirecting...
-            </p>
-          )}
-
-          {/* Timer / Resend */}
+          {/* Resend
           <p className="text-sm text-gray-500">
             {canResend ? (
               <>
-                Didn't get the code?{" "}
+                Didn't receive the code?{" "}
                 <button
                   onClick={handleResend}
                   className="text-emerald-600 underline underline-offset-4"
                 >
-                  Resend
+                  Resend OTP
                 </button>
               </>
             ) : (
               <>
-                Resend code in{" "}
-                <span className="text-emerald-600 font-medium">
+                Resend OTP in{" "}
+                <span className="font-medium text-emerald-600">
                   {formatTime(seconds)}
                 </span>
               </>
             )}
-          </p>
+          </p> */}
 
-          <Button
-            onClick={handleVerify}
-            disabled={loading || success}
-            className="w-full"
-          >
-            {loading ? "Verifying..." : "Verify email"}
+          {/* Verify Button */}
+          <Button onClick={handleVerify} disabled={loading} className="w-full">
+            {loading ? "Verifying..." : "Verify Email"}
           </Button>
         </CardContent>
       </Card>
