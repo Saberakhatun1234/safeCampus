@@ -126,7 +126,10 @@ export const GetAllIncidentsController = async (req, res) => {
     if (severity) filter.severity = severity;
     if (status) filter.status = status;
 
-    if (req.user.role !== "admin") {
+    // if (req.user.role !== "admin") {
+    //   filter.reportedBy = req.user.id;
+    // }
+    if (req.user.role === "student") {
       filter.reportedBy = req.user.id;
     }
 
@@ -136,6 +139,7 @@ export const GetAllIncidentsController = async (req, res) => {
 
     res.status(200).json({ success: true, total: incidents.length, incidents });
   } catch (error) {
+    console.log("error fron report controller: ",error)
     console.error(
       `[GetAllIncidentsController] ${new Date().toISOString()}:`,
       error.message,
@@ -154,11 +158,17 @@ export const GetIncidentByIdController = async (req, res) => {
       return res.status(404).json({ success: false, message: "Incident not found" });
     }
 
+    // if (
+    //   req.user.role !== "admin" &&
+    //   incident.reportedBy?._id.toString() !== req.user.id
+    // ) {
+    //   return res.status(403).json({ success: false, message: "Access denied" });
+    // }
     if (
-      req.user.role !== "admin" &&
+      req.user.role === "student" &&
       incident.reportedBy?._id.toString() !== req.user.id
     ) {
-      return res.status(403).json({ success: false, message: "Access denied" });
+      return res.status(403).json({ message: "Access denied" });
     }
 
     res.status(200).json({ success: true, incident });

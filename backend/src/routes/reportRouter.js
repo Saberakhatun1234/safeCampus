@@ -13,9 +13,9 @@ import {
 const router = express.Router();
 
 router.post("/reportCreated", protectUser, ReportController); // student + admin
-router.get("/", protectUser, GetAllIncidentsController); // student sees own, admin sees all
-router.get("/:id", protectUser, GetIncidentByIdController); // student sees own, admin sees all
-router.patch("/:id/status", protectUser, authorizeRoles("admin"), UpdateIncidentStatusController); // admin only
-router.delete("/:id", protectUser, authorizeRoles("admin"), DeleteIncidentController); // admin only
+router.get("/reportAll", protectUser, GetAllIncidentsController); // student sees own, admin sees all
+router.get("/reportAll/:id", protectUser, GetIncidentByIdController); // student sees own, admin sees all
+router.patch("/reportAll/:id/status", protectUser, authorizeRoles("admin","security"), UpdateIncidentStatusController); // admin only
+router.delete("/reportAll/:id", protectUser, authorizeRoles("admin"), DeleteIncidentController); // admin only
 
 export default router;

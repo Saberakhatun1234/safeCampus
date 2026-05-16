@@ -1,9 +1,15 @@
 import SOS from "../models/sos.js";
+import User from "../models/user.js";
+import { sendNotificationEmail } from "../config/mail.js";
+
+
 
 // Create SOS Alert
 const createSOS = async (req, res) => {
+console.log("Received SOS Request:", req.body);
   try {
     const { latitude, longitude, message } = req.body;
+
 
     if (!latitude || !longitude) {
       return res.status(400).json({
@@ -13,7 +19,7 @@ const createSOS = async (req, res) => {
     }
 
     const existingReport = await SOS.findOne({
-      user: req.user.id,
+      userId: req.user.id,
       latitude,
       longitude,
       message,

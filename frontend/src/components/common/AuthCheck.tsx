@@ -1,36 +1,34 @@
 import { Navigate } from "react-router-dom";
-
-type User = {
-  role: "admin" | "student" | "security";
-} | null;
+import { useAuth } from "@/context/AuthContext";
 
 type AuthCheckProps = {
-  isAuthenticated: boolean;
-  user: User;
-  requiredRole?: "admin" | "student" | "security";
   children: React.ReactNode;
+  requiredRole: "admin" | "student" | "security";
 };
 
-function AuthCheck({
-  isAuthenticated,
-  user,
-  requiredRole,
-  children,
-}: AuthCheckProps) {
-  // Not logged in
-  if (!isAuthenticated) {
+function AuthCheck({ children, requiredRole }: AuthCheckProps) {
+  const { user, isLoading } = useAuth();
+
+  // 1. Wait for auth check
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  // 2. Not logged in
+  if (!user) {
     return <Navigate to="/auth/login" replace />;
   }
 
-  // Logged in but wrong role
-  if (requiredRole && user?.role !== requiredRole) {
-    if (user?.role === "admin")
-      return <Navigate to="/admin/dashboard" replace />;
-    if (user?.role === "security")
-      return <Navigate to="/security/dashboard" replace />;
-    return <Navigate to="/student/home" replace />;
+  // 3. Wrong role
+  if (user.role !== requiredRole) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
+  // 4. Allowed
   return <>{children}</>;
 }
 

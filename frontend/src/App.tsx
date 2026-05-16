@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 
-import AuthCheck from "./components/common/AuthCheck";
 import HomePage from "./pages/HomePage";
 import Login from "./pages/authPages/Login";
 import Register from "./pages/authPages/Register";
@@ -12,8 +11,13 @@ import VerifyEmail from "./pages/authPages/VerifyEmail";
 import { useAuth } from "./context/AuthContext";
 import Unauthorized from "./pages/UnAuthorize";
 import { Toaster } from "./components/ui/sonner";
+import ReportIncident from "./pages/studentPages/ReportIncident";
+import AuthCheck from "./components/common/AuthCheck";
+import SecuritySos from "./pages/securityPages/SecuritySos";
+import SecurityReports from "./pages/securityPages/SecurityReports";
+import Sos from "./pages/studentPages/Sos";
 function App() {
-    const { user, isAuthenticated, isLoading } = useAuth();
+    const {  isLoading } = useAuth();
      if (isLoading) {
        return (
          <div className="min-h-screen flex items-center justify-center">
@@ -38,11 +42,7 @@ function App() {
           <Route
             path="/admin/dashboard"
             element={
-              <AuthCheck
-                isAuthenticated={isAuthenticated}
-                user={user}
-                requiredRole="admin"
-              >
+              <AuthCheck requiredRole="admin">
                 <AdminDashboard />
               </AuthCheck>
             }
@@ -50,24 +50,49 @@ function App() {
           <Route
             path="/security/dashboard"
             element={
-              <AuthCheck
-                isAuthenticated={isAuthenticated}
-                user={user}
-                requiredRole="security"
-              >
+              <AuthCheck requiredRole="security">
                 <SecurityDashboard />
+              </AuthCheck>
+            }
+          />
+          <Route
+            path="/security/sos"
+            element={
+              <AuthCheck requiredRole="security">
+                <SecuritySos />
+              </AuthCheck>
+            }
+          />
+          <Route
+            path="/security/reports"
+            element={
+              <AuthCheck requiredRole="security">
+                <SecurityReports />
               </AuthCheck>
             }
           />
           <Route
             path="/student/dashboard"
             element={
-              <AuthCheck
-                isAuthenticated={isAuthenticated}
-                user={user}
-                requiredRole="student"
-              >
+              <AuthCheck requiredRole="student">
                 <StudentDashboard />
+              </AuthCheck>
+            }
+          />
+          <Route
+            path="/student/report"
+            element={
+              <AuthCheck requiredRole="student">
+                <ReportIncident />
+              </AuthCheck>
+            }
+          />
+
+          <Route
+            path="/student/sos"
+            element={
+              <AuthCheck requiredRole="student">
+                <Sos/>
               </AuthCheck>
             }
           />
@@ -78,3 +103,7 @@ function App() {
 }
 
 export default App;
+
+
+
+

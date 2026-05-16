@@ -1,13 +1,13 @@
-import StatsCard from "@/components/common/Statscart";
 import DashboardLayout from "@/layouts/DashboardLayout";
 
 function StudentDashboard() {
   return (
-    <DashboardLayout>
-      <h1 className="text-3xl font-bold">Student Dashboard</h1>
-      <StatsCard title="Total Courses" value={12} />
-      <StatsCard title="Completed" value={8} />
-      <StatsCard title="In Progress" value={4} />
+    <DashboardLayout title="Student Dashboard">
+      <div className="bg-white rounded-xl p-6 shadow-sm">
+        <h2 className="text-xl font-semibold mb-2">Welcome Student</h2>
+
+        <p className="text-gray-600">SafeCampus student dashboard is ready.</p>
+      </div>
     </DashboardLayout>
   );
 }

@@ -25,8 +25,8 @@ const sosSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["active", "resolved"],
-      default: "active",
+      enum: ["Open", "Investigating", "Resolved"],
+      default: "Open",
     },
   },
   { timestamps: true },

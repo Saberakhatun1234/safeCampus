@@ -28,6 +28,12 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
+
+// in app.js — temporary, delete after running
+import SOS from "./models/sos.js";
+
+
+
 // Routes
 app.use("/auth", authRouter);
 app.use("/user", userRouter);

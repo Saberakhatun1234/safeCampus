@@ -8,10 +8,10 @@ import { createSOS, getAllSOS, updateSOSStatus } from "../controller/sosControll
 const router = express.Router();
 
 // Student triggers SOS
-router.post("/", protectUser, createSOS);
+router.post("/createSOS", protectUser, createSOS);
 
 // Admin/Security fetch alerts
-router.get("/", protectUser, authorizeRoles("admin", "security"), getAllSOS);
+router.get("/getAllSOS", protectUser, authorizeRoles("admin", "security"), getAllSOS);
 
 // Admin updates status
 router.put(
