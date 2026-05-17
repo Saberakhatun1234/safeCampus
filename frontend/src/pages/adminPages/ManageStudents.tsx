@@ -1,0 +1,1 @@
+//here student details will be shown and admin can manage them like add new student, delete student, update student details etc. Admin can also see the list of all students and their details. Admin can also search for a specific student by name or id. Admin can also filter the students based on their status (active/inactive).

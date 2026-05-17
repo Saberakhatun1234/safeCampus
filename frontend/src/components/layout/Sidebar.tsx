@@ -23,6 +23,10 @@ function Sidebar() {
             name: "Reports",
             path: "/admin/reports",
           },
+          {
+            name: "Manage Security",
+            path: "/admin/security",
+          }
         ]
       : user?.role === "security"
         ? [
