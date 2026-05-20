@@ -16,6 +16,11 @@ import AuthCheck from "./components/common/AuthCheck";
 import SecuritySos from "./pages/securityPages/SecuritySos";
 import SecurityReports from "./pages/securityPages/SecurityReports";
 import Sos from "./pages/studentPages/Sos";
+import AdminReport from "./pages/adminPages/ManageReports";
+import AdminSos from "./pages/adminPages/ManageSOSReports";
+import ManageStudents from "./pages/adminPages/ManageStudents";
+import ManageSecurity from "./pages/adminPages/ManageSecurity";
+import AddSecurity from "./pages/adminPages/AddSecurity";
 function App() {
     const {  isLoading } = useAuth();
      if (isLoading) {
@@ -44,6 +49,48 @@ function App() {
             element={
               <AuthCheck requiredRole="admin">
                 <AdminDashboard />
+              </AuthCheck>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <AuthCheck requiredRole="admin">
+                <AdminReport />
+              </AuthCheck>
+            }
+          />
+          <Route
+            path="/admin/sos-reports"
+            element={
+              <AuthCheck requiredRole="admin">
+                <AdminSos />
+              </AuthCheck>
+            }
+          />
+          <Route
+            path="/admin/students"
+            element={
+              <AuthCheck requiredRole="admin">
+                <ManageStudents />
+              </AuthCheck>
+            }
+          />
+          <Route
+            path="/admin/security"
+            element={
+              <AuthCheck requiredRole="admin">
+                <ManageSecurity />
+              </AuthCheck>
+            }
+          />
+          <Route
+            path="/admin/security/add"
+            element={
+              <AuthCheck
+              requiredRole="admin"
+              >
+                <AddSecurity />
               </AuthCheck>
             }
           />
@@ -92,7 +139,7 @@ function App() {
             path="/student/sos"
             element={
               <AuthCheck requiredRole="student">
-                <Sos/>
+                <Sos />
               </AuthCheck>
             }
           />

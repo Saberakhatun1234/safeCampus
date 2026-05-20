@@ -24,8 +24,16 @@ function Sidebar() {
             path: "/admin/reports",
           },
           {
+            name:"SOS Reports",
+            path:"/admin/sos-reports"
+          },
+          {
             name: "Manage Security",
             path: "/admin/security",
+          },
+          {
+            name: "Add Security",
+            path: "/admin/security/add",
           }
         ]
       : user?.role === "security"
@@ -59,30 +67,31 @@ function Sidebar() {
           ];
 
   return (
-    <aside className="w-64 bg-white border-r min-h-screen p-4">
-      <h2 className="text-2xl font-bold text-emerald-600 mb-8">SafeCampus</h2>
+    <div className="relative">
+      <aside className="fixed min-h-screen w-64 border-r bg-white p-4">
+        <h2 className="mb-8 text-2xl font-bold text-emerald-600">SafeCampus</h2>
 
-      <nav className="flex flex-col gap-2">
-        {menuItems.map((item) => {
-          const active = location.pathname === item.path;
+        <nav className="flex flex-col gap-2">
+          {menuItems.map((item, index) => {
+            const active = location.pathname === item.path;
 
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-4 py-2 rounded-lg transition-all
-              ${
-                active
-                  ? "bg-emerald-100 text-emerald-700 font-medium"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              {item.name}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+            return (
+              <Link
+                key={item.path || index}
+                to={item.path}
+                className={`rounded-lg px-4 py-2 transition-all ${
+                  active
+                    ? "bg-emerald-100 font-medium text-emerald-700"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+    </div>
   );
 }
 

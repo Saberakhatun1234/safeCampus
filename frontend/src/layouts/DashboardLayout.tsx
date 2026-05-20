@@ -17,21 +17,24 @@ function DashboardLayout({ children, title }: DashboardLayoutProps) {
 
   async function handleLogout() {
     await logout();
+
     toast.success("Logged out successfully");
+
     navigate("/");
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100">
       {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Section */}
+      <div className="ml-64 flex min-h-screen flex-col">
         {/* Navbar */}
-        <header className="h-16 bg-white border-b flex items-center justify-between px-6">
+        <header className="flex h-16 items-center justify-between border-b bg-white px-6 shadow-sm">
           <div>
             <h1 className="text-lg font-semibold">{title}</h1>
+
             <p className="text-sm text-gray-500">Welcome {user?.name}</p>
           </div>
 
@@ -41,7 +44,7 @@ function DashboardLayout({ children, title }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="p-6">{children}</main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
   );
